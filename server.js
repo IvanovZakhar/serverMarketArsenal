@@ -15,13 +15,30 @@ const Baskets = require('./models/baskets');
 const Birdhouses = require('./models/birdhouses');
 const Flags = require('./models/flags');
 const Grids = require('./models/grids');
+const GridsTwo = require('./models/grids-two');
 const Pergolias = require('./models/pergolias');
 const Swing = require('./models/swing')
 const Visors = require('./models/visors')
 const Woodcutters = require('./models/woodcutters')
- 
 const app = express();
 app.use(express.json());
+
+ 
+const {   
+        getVisorsData,
+        getBasketsData,
+        getAntiTheftData,
+        getWoodcuttersData,
+        getSwingData,
+        getPergoliasData,
+        getGridsData,
+        getFlagsData,
+        getBirdhousesData,
+        getGridsTwoData
+      } = require('./services/dataServices');
+
+
+
 
 // Подключение к базе данных
 mongoose.connect('mongodb://localhost:27017/Arsenal', {
@@ -31,6 +48,95 @@ mongoose.connect('mongodb://localhost:27017/Arsenal', {
 
 
 
+app.use((req, res, next) => {
+  res.setHeader('Access-Control-Allow-Origin', 'http://localhost:3000');
+  res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept');
+  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE');
+ 
+  next();
+});
+
+app.get('/allproducts', async (req, res) => {
+  try {
+    const visors = await getVisorsData();
+    const baskets = await getBasketsData();
+    const antiTheft = await getAntiTheftData();
+    const woodcutters = await getWoodcuttersData();
+    const swing = await getSwingData();
+    const pergolias = await getPergoliasData();
+    const gridsOne = await getGridsData();
+    const gridsTwo = await getGridsTwoData();
+    const flags = await getFlagsData();
+    const birdhouses = await getBirdhousesData();
+
+    const allProducts = 
+                        [
+                          ...visors, 
+                          ...baskets, 
+                          ...antiTheft, 
+                          ...woodcutters, 
+                          ...swing, 
+                          ...pergolias, 
+                          ...grids, 
+                          ...flags, 
+                          ...birdhouses,
+                          ...gridsOne,
+                          ...gridsTwo
+                        ];
+
+    // Отправляем объединенные данные в виде JSON в ответ на запрос
+    res.json(allProducts);
+  } catch (error) {
+    console.error('Ошибка при получении данных:', error);
+    // Отправляем ошибку в ответ на запрос
+    res.status(500).json({ error: 'Произошла ошибка при получении данных' });
+  }
+});
+
+
+app.get('/conditioner-protection', async (req, res) => {
+  try {
+    const visors = await getVisorsData();
+    const baskets = await getBasketsData();
+ 
+
+    const allProducts = 
+                        [
+                          ...visors, 
+                          ...baskets
+                        ];
+
+    // Отправляем объединенные данные в виде JSON в ответ на запрос
+    res.json(allProducts);
+  } catch (error) {
+    console.error('Ошибка при получении данных:', error);
+    // Отправляем ошибку в ответ на запрос
+    res.status(500).json({ error: 'Произошла ошибка при получении данных' });
+  }
+});
+
+app.get('/grids', async (req, res) => {
+  try {
+ 
+    const gridsOne = await getGridsData();
+    const gridsTwo = await getGridsTwoData();
+ 
+
+    const allProducts = 
+                        [
+                          ...gridsOne,
+                          ...gridsTwo
+                        ];
+
+    // Отправляем объединенные данные в виде JSON в ответ на запрос
+    res.json(allProducts);
+  } catch (error) {
+    console.error('Ошибка при получении данных:', error);
+    // Отправляем ошибку в ответ на запрос
+    res.status(500).json({ error: 'Произошла ошибка при получении данных' });
+  }
+});
+ 
 app.get('/anti-theft', (req, res) => {
   AntiTheft.find({})
     .then((antiTheftData) => {
@@ -75,13 +181,24 @@ app.get('/flags', (req, res) => {
     });
 });
 
-app.get('/grids', (req, res) => {
+app.get('/grids-one', (req, res) => {
   Grids.find({})
     .then((gridsData) => {
       res.json(gridsData);
     })
     .catch((error) => {
       console.log('Error retrieving anti-theft data: ', error);
+      res.status(500).send('Internal Server Error');
+    });
+});
+
+app.get('/grids-two', (req, res) => {
+  GridsTwo.find({})
+    .then((GridsTwoData) => {
+      res.json(GridsTwoData);
+    })
+    .catch((error) => {
+      console.log('Error retrieving GridsTwo data: ', error);
       res.status(500).send('Internal Server Error');
     });
 });
@@ -131,8 +248,7 @@ app.get('/woodcutters', (req, res) => {
 });
 
 
-
-// ...
+ 
 
 app.get('/data', async (req, res) => {
   try {
@@ -146,41 +262,41 @@ app.get('/data', async (req, res) => {
 });
 
 
-// // Определение схемы и модели
-// const mySchema = new mongoose.Schema({
-//   name: String,
-//   age: Number,
-//   email: String,
-// });
+// Определение схемы и модели
+const mySchema = new mongoose.Schema({
+  name: String,
+  number: Number,
+  product: [String]
+});
 
-// const MyModel = mongoose.model('MyModel', mySchema);
+const MyModel = mongoose.model('orders', mySchema);
 
-// // POST-запрос для добавления документа
-// app.post('/documents', async (req, res) => {
-//   try {
-//     const { name, age, email } = req.body;
-//     console.log( req.body)
+// POST-запрос для добавления документа
+app.post('/new-order', async (req, res) => {
+  try {
+    const { name, number, product } = req.body;
  
-//     // Создание нового документа
-//     const myDoc = new MyModel({
-//       name,
-//       age,
-//       email,
-//     });
+ 
+    // Создание нового документа
+    const myDoc = new MyModel({
+      name,
+      number,
+      product,
+    });
 
-//     // Сохранение документа в базе данных
-//     const savedDoc = await myDoc.save();
+    // Сохранение документа в базе данных
+    const savedDoc = await myDoc.save();
 
-//     res.status(201).json(savedDoc);
-//   } catch (error) {
-//     console.error(error);
-//     res.status(500).json({ error: 'Ошибка сервера' });
-//   }
-// });
+    res.status(201).json(savedDoc);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Ошибка сервера' });
+  }
+});
 
 
 
 // Запуск сервера
-app.listen(3000, () => {
-  console.log('Сервер запущен на порту 3000');
+app.listen(3001, () => {
+  console.log('Сервер запущен на порту 3001');
 });

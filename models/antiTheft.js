@@ -31,10 +31,11 @@ const antiTheftSchema = new Schema({
   annotation: String,
   security_features: String,
   device_type: String,
-  operation_modes: String
+  operation_modes: String,
+  url: String
 });
 
-const AntiTheft = mongoose.model('AntiTheft', antiTheftSchema, 'anti-theft');
+const AntiTheft = mongoose.model('AntiTheft', antiTheftSchema, 'anti_theft');
 
 
 module.exports = AntiTheft;
