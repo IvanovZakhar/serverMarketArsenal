@@ -4,14 +4,16 @@
   "description": "",
   "main": "index.js",
   "scripts": {
+    "build": "concurrently \"npm install\" \"npm run dev\"",
     "test": "echo \"Error: no test specified\" && exit 1",
-    "dev": "nodemon server.js",
-    "build": "npm install && npm run dev"
+    "dev": "nodemon server.js"
+  
   },
   "author": "",
   "license": "ISC",
   "dependencies": {
     "body-parser": "^1.20.2",
+    "concurrently": "^8.0.1",
     "express": "^4.18.2",
     "mongodb": "^5.4.0",
     "mongoose": "^7.1.0"
