@@ -2,7 +2,7 @@
 // const MongoClient    = require('mongodb').MongoClient;
 // const bodyParser     = require('body-parser');
 // const app            = express();
-// const db             = require('./config/db');
+
 // const port = 8000;
 // app.use(bodyParser.urlencoded({ extended: true }));
  
@@ -21,6 +21,7 @@ const Swing = require('./models/swing')
 const Visors = require('./models/visors')
 const Woodcutters = require('./models/woodcutters')
 const app = express();
+const port = process.env.PORT || 3000;
 app.use(express.json());
 
  
@@ -41,7 +42,7 @@ const {
 
 
 // Подключение к базе данных
-mongoose.connect('mongodb+srv://admin:arsenalmetal19@atlascluster.gifnzbs.mongodb.net/?retryWrites=true&w=majority', {
+mongoose.connect(`mongodb+srv://${process.env.name}:${process.env.pass}@atlascluster.gifnzbs.mongodb.net/?retryWrites=true&w=majority`, {
   useNewUrlParser: true,
   useUnifiedTopology: true,
 });
@@ -307,7 +308,9 @@ app.post('/new-order', async (req, res) => {
 
 
 
-// Запуск сервера
-app.listen(3001, () => {
-  console.log('Сервер запущен на порту 3001');
+
+
+// Ваш код сервера, использующий порт
+app.listen(port, () => {
+  console.log(`Сервер запущен на порту ${port}`);
 });
