@@ -41,11 +41,23 @@ const {
 
 
 // Подключение к базе данных
-mongoose.connect('mongodb://localhost:27017/Arsenal', {
+mongoose.connect('mongodb+srv://admin:arsenalmetal19@atlascluster.gifnzbs.mongodb.net/?retryWrites=true&w=majority', {
   useNewUrlParser: true,
   useUnifiedTopology: true,
 });
 
+const db = mongoose.connection;
+
+// Обработчик события ошибки подключения
+db.on('error', (error) => {
+  console.error('Ошибка подключения к базе данных:', error);
+});
+
+// Обработчик события успешного подключения
+db.once('open', () => {
+  console.log('Успешное подключение к базе данных');
+  // Здесь вы можете выполнять дополнительные действия после успешного подключения к базе данных
+});
 
 
 app.use((req, res, next) => {
@@ -77,7 +89,6 @@ app.get('/allproducts', async (req, res) => {
                           ...woodcutters, 
                           ...swing, 
                           ...pergolias, 
-                          ...grids, 
                           ...flags, 
                           ...birdhouses,
                           ...gridsOne,
