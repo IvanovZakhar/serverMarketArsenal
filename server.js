@@ -50,6 +50,7 @@ mongoose.connect(uri, { useNewUrlParser: true, useUnifiedTopology: true })
     // Дополнительный код вашего приложения
   })
   .catch(error => {
+    console.log(typeof uri)
     console.error('Error connecting to MongoDB:', error);
   });
  
