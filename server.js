@@ -42,7 +42,7 @@ const {
 
 
 // Подключение к базе данных
-mongoose.connect(`mongodb+srv://${process.env.name}:${process.env.pass}@atlascluster.gifnzbs.mongodb.net/?retryWrites=true&w=majority`, {
+mongoose.connect(env.MONGODB_URI, {
   useNewUrlParser: true,
   useUnifiedTopology: true,
 });
