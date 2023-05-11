@@ -42,7 +42,7 @@ const {
 
 
 // Подключение к базе данных
-mongoose.connect(procces.env.MONGODB_URI, {
+mongoose.connect(`${procces.env.MONGODB_URI}`, {
   useNewUrlParser: true,
   useUnifiedTopology: true,
 });
