@@ -42,23 +42,19 @@ const {
 
 
 // Подключение к базе данных
-mongoose.connect(`${process.env.MONGODB_URI}`, {
-  useNewUrlParser: true,
-  useUnifiedTopology: true,
-});
 
-const db = mongoose.connection;
+const uri = process.env.MONGODB_URI;
+mongoose.connect(uri, { useNewUrlParser: true, useUnifiedTopology: true })
+  .then(() => {
+    console.log('Connected to MongoDB');
+    // Дополнительный код вашего приложения
+  })
+  .catch(error => {
+    console.error('Error connecting to MongoDB:', error);
+  });
+ 
 
-// Обработчик события ошибки подключения
-db.on('error', (error) => {
-  console.error('Ошибка подключения к базе данных:', error);
-});
-
-// Обработчик события успешного подключения
-db.once('open', () => {
-  console.log('Успешное подключение к базе данных');
-  // Здесь вы можете выполнять дополнительные действия после успешного подключения к базе данных
-});
+ 
 
 
 app.use((req, res, next) => {
