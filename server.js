@@ -311,6 +311,14 @@ app.post('/new-order', async (req, res) => {
 
 
 // Ваш код сервера, использующий порт
-app.listen(port, () => {
-  console.log(`Сервер запущен на порту ${port}`);
-});
+// app.listen(port, () => {
+//   console.log(`Сервер запущен на порту ${port}`);
+// });
+
+if (require.main === module) {
+  app.listen(port, () => {
+    console.log(`Сервер запущен на порту ${port}`);
+  });
+}
+
+module.exports = app;
