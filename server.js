@@ -20,8 +20,9 @@ const Pergolias = require('./models/pergolias');
 const Swing = require('./models/swing')
 const Visors = require('./models/visors')
 const Woodcutters = require('./models/woodcutters')
+const ProductsForOrders = require('./models/productsForOrders')
 const app = express();
-const port = process.env.PORT || 3000;
+const port = process.env.PORT || 3001 ;
 app.use(express.json());
 
  
@@ -43,7 +44,7 @@ const {
 
 // Подключение к базе данных
 
-const uri = process.env.MONGODB_URI;
+const uri = process.env.MONGODB_URI || 'mongodb://localhost:27017/Arsenal';
 mongoose.connect(uri, { useNewUrlParser: true, useUnifiedTopology: true })
   .then(() => {
     console.log('Connected to MongoDB');
@@ -57,14 +58,14 @@ mongoose.connect(uri, { useNewUrlParser: true, useUnifiedTopology: true })
 
  
 
-
-app.use((req, res, next) => {
-  res.setHeader('Access-Control-Allow-Origin', 'http://localhost:3000');
-  res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept');
-  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE');
- 
-  next();
-});
+  app.use((req, res, next) => {
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept');
+    res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE');
+  
+    next();
+  });
+  
 
 app.get('/allproducts', async (req, res) => {
   try {
@@ -102,6 +103,17 @@ app.get('/allproducts', async (req, res) => {
   }
 });
 
+
+app.get('/products-for-orders', (req, res) => {
+  ProductsForOrders.find({})
+    .then((dataProductsForOrders) => {
+      res.json(dataProductsForOrders);
+    })
+    .catch((error) => {
+      console.log('Error retrieving anti-theft data: ', error);
+      res.status(500).send('Internal Server Error');
+    });
+});
 
 app.get('/conditioner-protection', async (req, res) => {
   try {
