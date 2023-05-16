@@ -67,54 +67,61 @@ mongoose.connect(uri, { useNewUrlParser: true, useUnifiedTopology: true })
   });
   
 
-app.get('/allproducts', async (req, res) => {
-  try {
-    const visors = await getVisorsData();
-    const baskets = await getBasketsData();
-    const antiTheft = await getAntiTheftData();
-    const woodcutters = await getWoodcuttersData();
-    const swing = await getSwingData();
-    const pergolias = await getPergoliasData();
-    const gridsOne = await getGridsData();
-    const gridsTwo = await getGridsTwoData();
-    const flags = await getFlagsData();
-    const birdhouses = await getBirdhousesData();
+  app.get('/allproducts', async (req, res) => {
+    try {
+      const article = req.query.article; // Получаем значение параметра article из запроса
+  
+      const visors = await getVisorsData(article);
+      const baskets = await getBasketsData(article);
+      const antiTheft = await getAntiTheftData(article);
+      const woodcutters = await getWoodcuttersData(article);
+      const swing = await getSwingData(article);
+      const pergolias = await getPergoliasData(article);
+      const gridsOne = await getGridsData(article);
+      const gridsTwo = await getGridsTwoData(article);
+      const flags = await getFlagsData(article);
+      const birdhouses = await getBirdhousesData(article);
+  
+      let allProducts = [];
+  
+      // Объединяем данные из каждой коллекции
+      allProducts = allProducts.concat(visors, baskets, antiTheft, woodcutters, swing, pergolias, gridsOne, gridsTwo, flags, birdhouses);
+  
+      // Если есть значение параметра article, фильтруем все продукты по полю "article"
+      if (article) {
+        allProducts = allProducts.filter(product => product.article === article);
+      }
+  
+      // Отправляем объединенные данные в виде JSON в ответ на запрос
+      res.json(allProducts);
+    } catch (error) {
+      console.error('Ошибка при получении данных:', error);
+      // Отправляем ошибку в ответ на запрос
+      res.status(500).json({ error: 'Произошла ошибка при получении данных' });
+    }
+  });
+  
 
-    const allProducts = 
-                        [
-                          ...visors, 
-                          ...baskets, 
-                          ...antiTheft, 
-                          ...woodcutters, 
-                          ...swing, 
-                          ...pergolias, 
-                          ...flags, 
-                          ...birdhouses,
-                          ...gridsOne,
-                          ...gridsTwo
-                        ];
-
-    // Отправляем объединенные данные в виде JSON в ответ на запрос
-    res.json(allProducts);
-  } catch (error) {
-    console.error('Ошибка при получении данных:', error);
-    // Отправляем ошибку в ответ на запрос
-    res.status(500).json({ error: 'Произошла ошибка при получении данных' });
-  }
-});
-
-
-app.get('/products-for-orders', (req, res) => {
-  ProductsForOrders.find({})
-    .then((dataProductsForOrders) => {
-      res.json(dataProductsForOrders);
-    })
-    .catch((error) => {
-      console.log('Error retrieving anti-theft data: ', error);
-      res.status(500).send('Internal Server Error');
-    });
-});
-
+  app.get('/products-for-orders', async (req, res) => {
+    try {
+      const article = req.query.article; // Получаем значение параметра article из запроса
+  
+      let productsForOrders = await ProductsForOrders.find({});
+  
+      // Если есть значение параметра article, фильтруем продукты для заказов по полю "article"
+      if (article) {
+        productsForOrders = productsForOrders.filter(product => product.article === article);
+      }
+  
+      // Отправляем данные продуктов для заказов в виде JSON в ответ на запрос
+      res.json(productsForOrders);
+    } catch (error) {
+      console.error('Ошибка при получении данных:', error);
+      // Отправляем ошибку в ответ на запрос
+      res.status(500).json({ error: 'Произошла ошибка при получении данных' });
+    }
+  });
+  
 app.get('/conditioner-protection', async (req, res) => {
   try {
     const visors = await getVisorsData();
@@ -158,8 +165,13 @@ app.get('/grids', async (req, res) => {
   }
 });
  
+ 
+
 app.get('/anti-theft', (req, res) => {
-  AntiTheft.find({})
+  const { article } = req.query;
+  const filter = article ? { article } : {};
+
+  AntiTheft.find(filter)
     .then((antiTheftData) => {
       res.json(antiTheftData);
     })
@@ -170,51 +182,66 @@ app.get('/anti-theft', (req, res) => {
 });
 
 app.get('/baskets', (req, res) => {
-  Baskets.find({})
+  const { article } = req.query;
+  const filter = article ? { article } : {};
+
+  Baskets.find(filter)
     .then((basketsData) => {
       res.json(basketsData);
     })
     .catch((error) => {
-      console.log('Error retrieving anti-theft data: ', error);
+      console.log('Error retrieving baskets data: ', error);
       res.status(500).send('Internal Server Error');
     });
 });
 
 app.get('/birdhouses', (req, res) => {
-  Birdhouses.find({})
+  const { article } = req.query;
+  const filter = article ? { article } : {};
+
+  Birdhouses.find(filter)
     .then((birdhousesData) => {
       res.json(birdhousesData);
     })
     .catch((error) => {
-      console.log('Error retrieving anti-theft data: ', error);
+      console.log('Error retrieving birdhouses data: ', error);
       res.status(500).send('Internal Server Error');
     });
 });
 
 app.get('/flags', (req, res) => {
-  Flags.find({})
+  const { article } = req.query;
+  const filter = article ? { article } : {};
+
+  Flags.find(filter)
     .then((flagsData) => {
       res.json(flagsData);
     })
     .catch((error) => {
-      console.log('Error retrieving anti-theft data: ', error);
+      console.log('Error retrieving flags data: ', error);
       res.status(500).send('Internal Server Error');
     });
 });
 
 app.get('/grids-one', (req, res) => {
-  Grids.find({})
+  const { article } = req.query;
+  const filter = article ? { article } : {};
+
+  Grids.find(filter)
     .then((gridsData) => {
       res.json(gridsData);
     })
     .catch((error) => {
-      console.log('Error retrieving anti-theft data: ', error);
+      console.log('Error retrieving grids data: ', error);
       res.status(500).send('Internal Server Error');
     });
 });
 
 app.get('/grids-two', (req, res) => {
-  GridsTwo.find({})
+  const { article } = req.query;
+  const filter = article ? { article } : {};
+
+  GridsTwo.find(filter)
     .then((GridsTwoData) => {
       res.json(GridsTwoData);
     })
@@ -225,48 +252,60 @@ app.get('/grids-two', (req, res) => {
 });
 
 app.get('/pergolias', (req, res) => {
-  Pergolias.find({})
-    .then((pergoliasData) => {
-      res.json(pergoliasData);
-    })
-    .catch((error) => {
-      console.log('Error retrieving anti-theft data: ', error);
-      res.status(500).send('Internal Server Error');
-    });
+  const { article } = req.query;
+  const filter = article ? { article } : {};
+  Pergolias.find(filter)
+  .then((pergoliasData) => {
+    res.json(pergoliasData);
+  })
+  .catch((error) => {
+    console.log('Error retrieving pergolias data: ', error);
+    res.status(500).send('Internal Server Error');
+  });
 });
 
 app.get('/swings', (req, res) => {
-  Swing.find({})
-    .then((swingData) => {
-      res.json(swingData);
-    })
-    .catch((error) => {
-      console.log('Error retrieving anti-theft data: ', error);
-      res.status(500).send('Internal Server Error');
-    });
+const { article } = req.query;
+const filter = article ? { article } : {};
+
+Swing.find(filter)
+  .then((swingData) => {
+    res.json(swingData);
+  })
+  .catch((error) => {
+    console.log('Error retrieving swings data: ', error);
+    res.status(500).send('Internal Server Error');
+  });
 });
 
 app.get('/visors', (req, res) => {
-  Visors.find({})
-    .then((visorsData) => {
-      res.json(visorsData);
-    })
-    .catch((error) => {
-      console.log('Error retrieving anti-theft data: ', error);
-      res.status(500).send('Internal Server Error');
-    });
+const { article } = req.query;
+const filter = article ? { article } : {};
+
+Visors.find(filter)
+  .then((visorsData) => {
+    res.json(visorsData);
+  })
+  .catch((error) => {
+    console.log('Error retrieving visors data: ', error);
+    res.status(500).send('Internal Server Error');
+  });
 });
 
 app.get('/woodcutters', (req, res) => {
-  Woodcutters.find({})
-    .then((woodcuttersData) => {
-      res.json(woodcuttersData);
-    })
-    .catch((error) => {
-      console.log('Error retrieving anti-theft data: ', error);
-      res.status(500).send('Internal Server Error');
-    });
+const { article } = req.query;
+const filter = article ? { article } : {};
+
+Woodcutters.find(filter)
+  .then((woodcuttersData) => {
+    res.json(woodcuttersData);
+  })
+  .catch((error) => {
+    console.log('Error retrieving woodcutters data: ', error);
+    res.status(500).send('Internal Server Error');
+  });
 });
+
 
 
  
