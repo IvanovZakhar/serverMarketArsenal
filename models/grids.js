@@ -35,7 +35,13 @@ const gridSchema = new mongoose.Schema({
     number_of_leafs: Number,
     number_of_chambers: Number,
     country_of_manufacture: String,
-    number_of_factory_packages: Number
+    number_of_factory_packages: Number,
+    categories: [
+      {
+          name: String,
+          link: String
+      }
+    ]
   });
   
   // Модель для коллекции grids

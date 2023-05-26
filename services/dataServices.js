@@ -13,7 +13,7 @@ const Woodcutters = require('./../models/woodcutters')
 // Получение данных для модели Visor
 const getVisorsData = async () => {
   try {
-    const visors = await Visors.find({}, 'article name_of_product price_rubles annotation price_before_discount main_photo_link url');
+    const visors = await Visors.find({}, 'article name_of_product price_rubles annotation price_before_discount main_photo_link url width_in_packaging_mm height_in_packaging_mm length_in_packaging_mm weight_in_packaging_g');
     return visors;
   } catch (error) {
     console.error('Ошибка при получении данных из коллекции visors:', error);
@@ -24,7 +24,7 @@ const getVisorsData = async () => {
 // Получение данных для модели Baskets
 const getBasketsData = async () => {
   try {
-    const baskets = await Baskets.find({}, 'article name_of_product price_rubles annotation price_before_discount main_photo_link url');
+    const baskets = await Baskets.find({}, 'article name_of_product price_rubles annotation price_before_discount main_photo_link url width_in_packaging_mm height_in_packaging_mm length_in_packaging_mm weight_in_packaging_g');
     return baskets;
   } catch (error) {
     console.error('Ошибка при получении данных из коллекции baskets:', error);
@@ -35,7 +35,7 @@ const getBasketsData = async () => {
 // Получение данных для модели AntiTheft
 const getAntiTheftData = async () => {
   try {
-    const antiTheft = await AntiTheft.find({}, 'article name_of_product price_rubles annotation price_before_discount main_photo_link url');
+    const antiTheft = await AntiTheft.find({}, 'article name_of_product price_rubles annotation price_before_discount main_photo_link url width_in_packaging_mm height_in_packaging_mm length_in_packaging_mm weight_in_packaging_g');
     return antiTheft;
   } catch (error) {
     console.error('Ошибка при получении данных из коллекции antiTheft:', error);
@@ -46,7 +46,7 @@ const getAntiTheftData = async () => {
 // Получение данных для модели Birdhouses
 const getBirdhousesData = async () => {
   try {
-    const birdhouses = await Birdhouses.find({}, 'article name_of_product price_rubles annotation price_before_discount main_photo_link url');
+    const birdhouses = await Birdhouses.find({}, 'article name_of_product price_rubles annotation price_before_discount main_photo_link url width_in_packaging_mm height_in_packaging_mm length_in_packaging_mm weight_in_packaging_g');
     return birdhouses;
   } catch (error) {
     console.error('Ошибка при получении данных из коллекции birdhouses:', error);
@@ -57,7 +57,7 @@ const getBirdhousesData = async () => {
 // Получение данных для модели Flags
 const getFlagsData = async () => {
   try {
-    const flags = await Flags.find({}, 'article name_of_product price_rubles annotation price_before_discount main_photo_link url');
+    const flags = await Flags.find({}, 'article name_of_product price_rubles annotation price_before_discount main_photo_link url width_in_packaging_mm height_in_packaging_mm length_in_packaging_mm weight_in_packaging_g');
     return flags;
   } catch (error) {
     console.error('Ошибка при получении данных из коллекции flags:', error);
@@ -68,7 +68,7 @@ const getFlagsData = async () => {
 // Получение данных для модели Grids
 const getGridsData = async () => {
   try {
-    const grids = await Grids.find({}, 'article name_of_product price_rubles annotation price_before_discount main_photo_link url');
+    const grids = await Grids.find({}, 'article name_of_product price_rubles annotation price_before_discount main_photo_link url width_in_packaging_mm height_in_packaging_mm length_in_packaging_mm weight_in_packaging_g');
     return grids;
   } catch (error) {
     console.error('Ошибка при получении данных из коллекции grids:', error);
@@ -78,7 +78,7 @@ const getGridsData = async () => {
 
 const getGridsTwoData = async () => {
   try {
-    const gridsTwo = await GridsTwo.find({}, 'article name_of_product price_rubles annotation price_before_discount main_photo_link url');
+    const gridsTwo = await GridsTwo.find({}, 'article name_of_product price_rubles annotation price_before_discount main_photo_link url width_in_packaging_mm height_in_packaging_mm length_in_packaging_mm weight_in_packaging_g');
     return gridsTwo;
   } catch (error) {
     console.error('Ошибка при получении данных из коллекции grids:', error);
@@ -89,7 +89,7 @@ const getGridsTwoData = async () => {
 // Получение данных для модели Pergolias
 const getPergoliasData = async () => {
   try {
-    const pergolias = await Pergolias.find({}, 'article name_of_product price_rubles annotation price_before_discount main_photo_link url');
+    const pergolias = await Pergolias.find({}, 'article name_of_product price_rubles annotation price_before_discount main_photo_link url width_in_packaging_mm height_in_packaging_mm length_in_packaging_mm weight_in_packaging_g');
     return pergolias;
   } catch (error) {
     console.error('Ошибка при получении данных из коллекции pergolias:', error);
@@ -100,7 +100,7 @@ const getPergoliasData = async () => {
 // Получение данных для модели Swing
 const getSwingData = async () => {
   try {
-    const swing = await Swing.find({}, 'article name_of_product price_rubles annotation price_before_discount main_photo_link url');
+    const swing = await Swing.find({}, 'article name_of_product price_rubles annotation price_before_discount main_photo_link url width_in_packaging_mm height_in_packaging_mm length_in_packaging_mm weight_in_packaging_g');
     return swing;
   } catch (error) {
     console.error('Ошибка при получении данных из коллекции swing:', error);
@@ -112,7 +112,7 @@ const getSwingData = async () => {
 // Получение данных для модели Woodcutters
 const getWoodcuttersData = async () => {
   try {
-    const woodcutters = await Woodcutters.find({}, 'article name_of_product price_rubles annotation price_before_discount main_photo_link url');
+    const woodcutters = await Woodcutters.find({}, 'article name_of_product price_rubles annotation price_before_discount main_photo_link url width_in_packaging_mm height_in_packaging_mm length_in_packaging_mm weight_in_packaging_g');
     return woodcutters;
   } catch (error) {
     console.error('Ошибка при получении данных из коллекции woodcutters:', error);

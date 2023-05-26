@@ -22,7 +22,7 @@ const Visors = require('./models/visors')
 const Woodcutters = require('./models/woodcutters')
 const ProductsForOrders = require('./models/productsForOrders')
 const app = express();
-const port = process.env.PORT || 3001 ;
+const port = process.env.PORT || 3004 ;
 app.use(express.json());
 
  
@@ -51,7 +51,7 @@ mongoose.connect(uri, { useNewUrlParser: true, useUnifiedTopology: true })
     // Дополнительный код вашего приложения
   })
   .catch(error => {
-    console.log(typeof uri)
+ 
     console.error('Error connecting to MongoDB:', error);
   });
  
@@ -149,7 +149,7 @@ app.get('/grids', async (req, res) => {
     const gridsOne = await getGridsData();
     const gridsTwo = await getGridsTwoData();
  
-
+     
     const allProducts = 
                         [
                           ...gridsOne,
@@ -323,31 +323,39 @@ app.get('/data', async (req, res) => {
 
 
 // Определение схемы и модели
-const mySchema = new mongoose.Schema({
-  name: String,
+const orderSchema = new mongoose.Schema({
+  fname: String,
+  lname: String,
   number: Number,
-  product: [String]
+  city: String,
+  street: String,
+  houseNumber: Number,
+  apartmentNumber: Number,
+  product: [
+    {
+      article: String,
+      name_of_product: String,
+      price_rubles: Number,
+      quantity: Number
+    }
+  ]
 });
 
-const MyModel = mongoose.model('orders', mySchema);
+const OrderModel = mongoose.model('Order', orderSchema);
 
-// POST-запрос для добавления документа
 app.post('/new-order', async (req, res) => {
   try {
-    const { name, number, product } = req.body;
- 
- 
+    const { fname, lname, number, city, street, houseNumber, apartmentNumber, product } = req.body;
+
     // Создание нового документа
-    const myDoc = new MyModel({
-      name,
-      number,
-      product,
+    const order = new OrderModel({
+      fname, lname, number, city, street, houseNumber, apartmentNumber, product
     });
 
     // Сохранение документа в базе данных
-    const savedDoc = await myDoc.save();
+    const savedOrder = await order.save();
 
-    res.status(201).json(savedDoc);
+    res.status(201).json(savedOrder);
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: 'Ошибка сервера' });
