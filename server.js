@@ -362,7 +362,33 @@ app.post('/new-order', async (req, res) => {
   }
 });
 
+// Определение схемы и модели
+const feedbackSchema = new mongoose.Schema({
+  name: String,
+  number: Number
+});
 
+const FeedbackModel = mongoose.model('Feedback', feedbackSchema);
+
+
+app.post('/new-feedback', async (req, res) => {
+  try {
+    const { name, number} = req.body;
+
+    // Создание нового документа
+    const order = new FeedbackModel({
+      name, number
+    });
+
+    // Сохранение документа в базе данных
+    const savedOrder = await order.save();
+
+    res.status(201).json(savedOrder);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Ошибка сервера' });
+  }
+});
 
 
 

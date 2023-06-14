@@ -41,7 +41,7 @@ const gridSchema = new mongoose.Schema({
           name: String,
           link: String
       }
-  ]
+    ]
   });
   
   // Модель для коллекции grids
