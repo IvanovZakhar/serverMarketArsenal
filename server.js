@@ -326,11 +326,11 @@ app.get('/data', async (req, res) => {
 const orderSchema = new mongoose.Schema({
   fname: String,
   lname: String,
+  lfname: String,
   number: Number,
-  city: String,
-  street: String,
-  houseNumber: Number,
-  apartmentNumber: Number,
+  chosenPost: String,
+  addressPost: String,
+  pricePost: Number, 
   product: [
     {
       article: String,
@@ -345,11 +345,11 @@ const OrderModel = mongoose.model('Order', orderSchema);
 
 app.post('/new-order', async (req, res) => {
   try {
-    const { fname, lname, number, city, street, houseNumber, apartmentNumber, product } = req.body;
-
+    const { fname, lname, lfname, number, chosenPost, addressPost, pricePost, product } = req.body;
+ 
     // Создание нового документа
     const order = new OrderModel({
-      fname, lname, number, city, street, houseNumber, apartmentNumber, product
+      fname, lname, lfname, number, chosenPost, addressPost, pricePost, product
     });
 
     // Сохранение документа в базе данных
