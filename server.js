@@ -28,7 +28,8 @@ const app = express();
 const port = process.env.PORT || 3004 ;
 const axios = require('axios');
 const bodyParser = require('body-parser');
-
+const https = require('https');
+const fs = require('fs');
 // Разбор тела запроса в формате JSON
 app.use(bodyParser.json());
 app.use(express.json());
@@ -47,6 +48,12 @@ const {
         getGridsTwoData
       } = require('./services/dataServices');
 
+// Настройка маршрутов и другой функциональности вашего сервера
+
+const options = {
+  key: fs.readFileSync('/etc/letsencrypt/live/f9fd09879062.vps.myjino.ru/privkey.pem'),
+  cert: fs.readFileSync('/etc/letsencrypt/live/f9fd09879062.vps.myjino.ru/fullchain.pem')
+};
 
 
 
@@ -627,7 +634,7 @@ app.post('/new-feedback', async (req, res) => {
 
  
 if (require.main === module) {
-  app.listen(port, () => {
+  https.createServer(options, app).listen(port, () => {
     console.log(`Сервер запущен на порту ${port}`);
   });
 }
