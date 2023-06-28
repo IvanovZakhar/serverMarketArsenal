@@ -21,10 +21,18 @@ const Swing = require('./models/swing')
 const Visors = require('./models/visors')
 const Woodcutters = require('./models/woodcutters')
 const ProductsForOrders = require('./models/productsForOrders')
+const User = require('./models/users')
+const bcrypt = require('bcrypt');
+const saltRounds = 10; // Количество раундов соли (salt rounds) для хеширования пароля
 const app = express();
 const port = process.env.PORT || 3004 ;
-app.use(express.json());
+const axios = require('axios');
+const bodyParser = require('body-parser');
 
+// Разбор тела запроса в формате JSON
+app.use(bodyParser.json());
+app.use(express.json());
+require('dotenv').config();
  
 const {   
         getVisorsData,
@@ -66,6 +74,124 @@ mongoose.connect(uri, { useNewUrlParser: true, useUnifiedTopology: true })
     next();
   });
   
+
+
+
+  // Регистрация 
+  const confirmationCode = generateConfirmationCode();
+  const generatedPassword = generatePassword();
+  const createdAt = new Date();
+// Обработчик POST-запроса на регистрацию нового пользователя
+app.post('/register', async (req, res) => {
+  const { number, password } = req.body;
+  const access = 'user';
+  // Генерация кода подтверждения
+
+  try {
+    // Проверка, что пользователь с таким номером не существует
+    const existingUser = await User.findOne({ number }).exec();
+
+    if (existingUser) {
+      return res.status(409).json({ error: 'Пользователь с таким номером уже существует' });
+    }
+
+    // Хеширование пароля
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    // Создание нового пользователя с сохранением в базу данных
+    const newUser = new User({ access, number, password: hashedPassword, confirmationCode , createdAt});
+    await newUser.save();
+
+    // Отправка SMS с кодом подтверждения
+    const message  = `Ваш код подтверждения: ${confirmationCode}`;
+    await sendSMS(number, message); 
+    res.json({ message: 'Код подтверждения отправлен на ваш номер телефона' });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Ошибка сервера' });
+  }
+});
+
+// Обработчик POST-запроса на подтверждение номера
+app.post('/verify', async (req, res) => {
+  const { number, code } = req.body;
+
+  try {
+    // Поиск пользователя с указанным номером и кодом подтверждения
+    const user = await User.findOne({ number, confirmationCode: code }).exec();
+
+    if (!user) {
+      return res.status(401).json({ error: 'Неправильный код подтверждения' });
+    }
+
+  
+    user.confirmationCode = '';
+    user.isNumberVerified = true; // Установка значения isNumberVerified на true
+    await user.save();
+
+    res.json({ message: 'Регистрация прошла успешно' });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Ошибка сервера' });
+  }
+});
+
+app.post('/send-auth', async (req, res) => {
+  const { number  } = req.body; 
+  const message = `Ваш заказ оформлен. Для авторизации на сайте АрсеналЪ-1.РФ используйте Номер: ${number} Пароль: ${generatedPassword}`
+  await sendSMS(number, message).then(res.json({ message: 'Регистрация прошла успешно' }))
+  
+});
+  
+  // Функция для генерации случайного кода подтверждения
+  function generateConfirmationCode() {
+    // Генерация случайного 4-значного числа
+    return Math.floor(1000 + Math.random() * 9000).toString();
+  }
+  
+  // Обработчик POST-запроса на авторизацию пользователя
+  app.post('/login', async (req, res) => {
+    const { number, password } = req.body; 
+    try {
+      // Поиск пользователя в базе данных
+      const user = await User.findOne({ number: number }).exec(); 
+      if (!user) {
+        return res.status(401).json({ error: 'Неправильное имя пользователя или пароль' });
+      }
+  
+      // Сравнение хешированного пароля с введенным паролем
+      const passwordMatch = await bcrypt.compare(password, user.password); 
+      if (!passwordMatch) {
+        return res.status(401).json({ error: 'Неправильное имя пользователя или пароль' });
+      } 
+      res.json({ message: 'Авторизация прошла успешно', userId: user._id });
+    } catch (err) {
+      console.error(err);
+      res.status(500).json({ error: 'Ошибка сервера' });
+    }
+  });
+  
+// Обработчик POST-запроса на поиск пользователя по ID
+app.post('/users', async (req, res) => {
+  try {
+    const { userId } = req.body;
+
+    // Поиск пользователя по userId
+    const user = await User.findById(userId);
+
+    if (!user) {
+      return res.status(404).json({ error: 'Пользователь не найден' });
+    }
+
+    // Отправка данных пользователя в ответе
+    res.json(user);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Ошибка сервера' });
+  }
+});
+
+
 
   app.get('/allproducts', async (req, res) => {
     try {
@@ -322,8 +448,36 @@ app.get('/data', async (req, res) => {
 });
 
 
-// Определение схемы и модели
-const orderSchema = new mongoose.Schema({
+
+ 
+
+const apiUrl = process.env.API_URL;
+ // Ваш логин в системе SMS Aero
+const apiKey = process.env.API_KEY; // Ваш API-ключ
+const username = process.env.SMS_LOGIN;
+const sendSMS = async (phoneNumber, message) => {
+  try { 
+    const senderName = 'SMS Aero'; // Имя отправителя
+
+    const url = `${apiUrl}/sms/send`;
+    const authHeader = `Basic ${Buffer.from(`${username}:${apiKey}`).toString('base64')}`;
+    const requestData = {
+      numbers: [phoneNumber],
+      text: message,
+      sign: senderName
+    };
+
+    const response = await axios.post(url, requestData, { headers: { 'Authorization': authHeader } });
+ 
+  } catch (error) {
+    console.error(error);
+  }
+};
+
+
+ // Определение схемы и модели
+ const orderSchema = new mongoose.Schema({
+  userId: String,
   fname: String,
   lname: String,
   lfname: String,
@@ -338,29 +492,109 @@ const orderSchema = new mongoose.Schema({
       price_rubles: Number,
       quantity: Number
     }
-  ]
+  ],
+  status: {
+    type: String,
+    default: 'В обработке'
+  },
+  createdAt: {
+    type: Date,
+    default: Date.now
+  }
 });
 
 const OrderModel = mongoose.model('Order', orderSchema);
 
 app.post('/new-order', async (req, res) => {
-  try {
+  
     const { fname, lname, lfname, number, chosenPost, addressPost, pricePost, product } = req.body;
- 
+
+    const access = 'user' 
+    // Проверка, что пользователь с таким номером не существует
+    const existingUser = await User.findOne({ number }).exec();
+
+    if (existingUser) {
+      return res.status(409).json({ error: 'Пользователь с таким номером уже существует' });
+    }  
+  
+    // Хеширование пароля
+    const hashedPassword = await bcrypt.hash(generatedPassword, 10);
+
+    // Создание нового пользователя с сохранением в базу данных
+    const newUser = new User({ access, fname, lname, lfname, number, password: hashedPassword, confirmationCode });
+
+    await newUser.save();
+    const userId = newUser._id 
+    // Отправка SMS с кодом подтверждения
+    const message  = `Ваш код подтверждения: ${confirmationCode}`;
+    await sendSMS(number, message);
+
+    res.json({ message: 'Код подтверждения отправлен на ваш номер телефона' }); 
     // Создание нового документа
+  
     const order = new OrderModel({
-      fname, lname, lfname, number, chosenPost, addressPost, pricePost, product
+      userId,
+      fname,
+      lname,
+      lfname,
+      number,
+      chosenPost,
+      addressPost,
+      pricePost,
+      product,
+      status: 'В обработке',
+      createdAt
     });
 
     // Сохранение документа в базе данных
-    const savedOrder = await order.save();
+    await order.save();
+    
+  
+ 
+});
+app.post('/new-orderauth', async (req, res) => {
+  
+  const {userId, fname, lname, lfname, number, chosenPost, addressPost, pricePost, product } = req.body;
+ 
+   
+  // Создание нового документа
 
-    res.status(201).json(savedOrder);
+  const order = new OrderModel({
+    userId,
+    fname,
+    lname,
+    lfname,
+    number,
+    chosenPost,
+    addressPost,
+    pricePost,
+    product,
+    status: 'В обработке',
+    createdAt
+  });
+
+  // Сохранение документа в базе данных
+  await order.save();
+  
+  res.json({ message: 'Ваш заказ создан' });
+
+
+});
+
+
+app.post('/orders-by-user', async (req, res) => {
+  const { userId } = req.body;
+
+  try {
+    const orders = await OrderModel.find({ userId });
+
+    res.json({ orders });
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: 'Ошибка сервера' });
   }
 });
+
 
 // Определение схемы и модели
 const feedbackSchema = new mongoose.Schema({
@@ -391,16 +625,27 @@ app.post('/new-feedback', async (req, res) => {
 });
 
 
-
-// Ваш код сервера, использующий порт
-// app.listen(port, () => {
-//   console.log(`Сервер запущен на порту ${port}`);
-// });
-
+ 
 if (require.main === module) {
   app.listen(port, () => {
     console.log(`Сервер запущен на порту ${port}`);
   });
 }
+
+
+
+function generatePassword() {
+  const length = 6;
+  const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+  let password = '';
+
+  for (let i = 0; i < length; i++) {
+    const randomIndex = Math.floor(Math.random() * characters.length);
+    password += characters[randomIndex];
+  }
+
+  return password;
+}
+
 
 module.exports = app;
