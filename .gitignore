@@ -6,6 +6,9 @@
 .pnp.js
 /config
 .env
+privkey.pem
+fullchain.pem
+.pem
 # testing
 /coverage
 

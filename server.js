@@ -30,6 +30,7 @@ const axios = require('axios');
 const bodyParser = require('body-parser');
 const https = require('https');
 const fs = require('fs');
+const { spawn } = require('child_process');
 // Разбор тела запроса в формате JSON
 app.use(bodyParser.json());
 app.use(express.json());
@@ -56,6 +57,7 @@ const options = {
 };
 
 
+ 
 
 // Подключение к базе данных
 
@@ -460,12 +462,11 @@ app.get('/data', async (req, res) => {
 
 const apiUrl = process.env.API_URL;
  // Ваш логин в системе SMS Aero
-const apiKey = process.env.API_KEY; // Ваш API-ключ
+const apiKey = process.env.SMS_APIKEY; // Ваш API-ключ
 const username = process.env.SMS_LOGIN;
 const sendSMS = async (phoneNumber, message) => {
-  try { 
-    const senderName = 'SMS Aero'; // Имя отправителя
-
+  try {  
+    const senderName = 'SMS Aero'; // Имя отправителя 
     const url = `${apiUrl}/sms/send`;
     const authHeader = `Basic ${Buffer.from(`${username}:${apiKey}`).toString('base64')}`;
     const requestData = {
@@ -584,10 +585,38 @@ app.post('/new-orderauth', async (req, res) => {
   await order.save();
   
   res.json({ message: 'Ваш заказ создан' });
-
+ 
 
 });
 
+
+// POST-маршрут для обновления пароля пользователя по номеру телефона
+app.post('/update-password', async (req, res) => {
+  const { number } = req.body;
+
+  try {
+    // Поиск пользователя по номеру телефона
+    const user = await User.findOne({ number });
+
+    if (!user) {
+      return res.status(404).json({ error: 'Пользователь не найден' });
+    }
+     
+   
+    const hashedPassword = await bcrypt.hash(generatedPassword, 10);
+    // Обновление пароля
+    user.password = hashedPassword;
+    await user.save();
+    // Отправка смс с новым паролем
+   
+    const message = `Номер:${number} Новый пароль: ${generatePassword}`
+    await sendSMS(number, message)
+    return res.status(200).json({ message: 'Новый пароль отправлен вам в SMS сообщении' });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ error: 'Внутренняя ошибка сервера' });
+  }
+});
 
 app.post('/orders-by-user', async (req, res) => {
   const { userId } = req.body;
@@ -630,6 +659,58 @@ app.post('/new-feedback', async (req, res) => {
     res.status(500).json({ error: 'Ошибка сервера' });
   }
 });
+ 
+app.post('/users/:id', async (req, res) => {
+  const { id } = req.params; // Получаем id из URL-параметра
+  const { lname, fname, lfname, email } = req.body; // Получаем lname, fname, lfname из тела запроса
+
+  try {
+    // Находим пользователя по id
+    const user = await User.findById(id);
+
+    if (!user) {
+      return res.status(404).json({ error: 'Пользователь не найден' });
+    }
+
+    // Обновляем lname, fname, lfname пользователя
+    user.lname = lname;
+    user.fname = fname;
+    user.lfname = lfname;
+    user.email = email;
+    // Сохраняем обновленного пользователя
+    await user.save();
+
+    res.json({ message: 'Данные пользователя успешно обновлены' });
+  } catch (error) {
+    console.error('Ошибка при обновлении данных пользователя:', error);
+    res.status(500).json({ error: 'Ошибка сервера' });
+  }
+});
+
+app.post('/reset-password', async (req, res) => {
+  const { number, password } = req.body;
+
+  try {
+    // Поиск пользователя в базе данных по номеру телефона
+    const user = await User.findOne({ number: number }).exec();
+    if (!user) {
+      return res.status(404).json({ error: 'Пользователь не найден' });
+    }
+
+    // Обновление пароля пользователя
+    user.password = password;
+
+    // Сохранение обновленного пользователя
+    await user.save();
+
+    res.json({ message: 'Пароль успешно изменен' });
+  } catch (error) {
+    console.error('Ошибка при изменении пароля:', error);
+    res.status(500).json({ error: 'Ошибка сервера' });
+  }
+});
+
+
 
 
  
@@ -638,7 +719,11 @@ if (require.main === module) {
     console.log(`Сервер запущен на порту ${port}`);
   });
 }
-
+// if (require.main === module) {
+//   app.listen(port, () => {
+//     console.log(`Сервер запущен на порту ${port}`);
+//   });
+// }
 
 
 function generatePassword() {
