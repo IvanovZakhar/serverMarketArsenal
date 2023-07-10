@@ -11,6 +11,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@a2seven/yoo-checkout": "^1.1.4",
     "axios": "^1.4.0",
     "bcrypt": "^5.1.0",
     "body-parser": "^1.20.2",
@@ -18,8 +19,10 @@
     "concurrently": "^8.0.1",
     "dotenv": "^16.3.1",
     "express": "^4.18.2",
+    "http-proxy-middleware": "^2.0.6",
     "mongodb": "^5.4.0",
-    "mongoose": "^7.1.0"
+    "mongoose": "^7.1.0",
+    "uuid4": "^2.0.3"
   },
   "devDependencies": {
     "nodemon": "^2.0.22"

@@ -8,7 +8,8 @@
  
 
 const { request } = require('express');
-const express = require('express');
+const express = require('express'); 
+const proxy = require('http-proxy-middleware');
 const mongoose = require('mongoose');
 const AntiTheft = require('./models/antiTheft');
 const Baskets = require('./models/baskets');
@@ -24,6 +25,8 @@ const ProductsForOrders = require('./models/productsForOrders')
 const User = require('./models/users')
 const bcrypt = require('bcrypt');
 const saltRounds = 10; // Количество раундов соли (salt rounds) для хеширования пароля
+const uuid4 = require('uuid4')
+const { YooCheckout } = require('@a2seven/yoo-checkout');
 const app = express();
 const port = process.env.PORT || 3004 ;
 const axios = require('axios');
@@ -61,7 +64,7 @@ const options = {
 
 // Подключение к базе данных
 
-const uri = process.env.MONGODB_URI || 'mongodb://localhost:27017/Arsenal';
+const uri = process.env.MONGODB_URI;
 mongoose.connect(uri, { useNewUrlParser: true, useUnifiedTopology: true })
   .then(() => {
     console.log('Connected to MongoDB');
@@ -90,6 +93,10 @@ mongoose.connect(uri, { useNewUrlParser: true, useUnifiedTopology: true })
   const confirmationCode = generateConfirmationCode();
   const generatedPassword = generatePassword();
   const createdAt = new Date();
+
+
+ 
+  
 // Обработчик POST-запроса на регистрацию нового пользователя
 app.post('/register', async (req, res) => {
   const { number, password } = req.body;
@@ -465,6 +472,9 @@ const apiUrl = process.env.API_URL;
 const apiKey = process.env.SMS_APIKEY; // Ваш API-ключ
 const username = process.env.SMS_LOGIN;
 const sendSMS = async (phoneNumber, message) => {
+  console.log('phoneNumber')
+  console.log(typeof phoneNumber)
+  console.log(phoneNumber)
   try {  
     const senderName = 'SMS Aero'; // Имя отправителя 
     const url = `${apiUrl}/sms/send`;
@@ -485,6 +495,7 @@ const sendSMS = async (phoneNumber, message) => {
 
  // Определение схемы и модели
  const orderSchema = new mongoose.Schema({
+  _id: String,
   userId: String,
   fname: String,
   lname: String,
@@ -493,6 +504,7 @@ const sendSMS = async (phoneNumber, message) => {
   chosenPost: String,
   addressPost: String,
   pricePost: Number, 
+  totalSum: Number, 
   product: [
     {
       article: String,
@@ -514,9 +526,9 @@ const sendSMS = async (phoneNumber, message) => {
 const OrderModel = mongoose.model('Order', orderSchema);
 
 app.post('/new-order', async (req, res) => {
-  
-    const { fname, lname, lfname, number, chosenPost, addressPost, pricePost, product } = req.body;
-
+    console.log(req.body)
+    const { fname, lname, lfname, number, chosenPost, addressPost, pricePost, product, email, total_sum} = req.body;
+    const id = uuid4()
     const access = 'user' 
     // Проверка, что пользователь с таким номером не существует
     const existingUser = await User.findOne({ number }).exec();
@@ -529,18 +541,18 @@ app.post('/new-order', async (req, res) => {
     const hashedPassword = await bcrypt.hash(generatedPassword, 10);
 
     // Создание нового пользователя с сохранением в базу данных
-    const newUser = new User({ access, fname, lname, lfname, number, password: hashedPassword, confirmationCode });
+    const newUser = new User({ access, fname, lname, lfname, number, password: hashedPassword, confirmationCode, total_sum, email});
 
     await newUser.save();
     const userId = newUser._id 
     // Отправка SMS с кодом подтверждения
     const message  = `Ваш код подтверждения: ${confirmationCode}`;
     await sendSMS(number, message);
-
-    res.json({ message: 'Код подтверждения отправлен на ваш номер телефона' }); 
+ 
     // Создание нового документа
   
     const order = new OrderModel({
+      _id: id,
       userId,
       fname,
       lname,
@@ -556,18 +568,20 @@ app.post('/new-order', async (req, res) => {
 
     // Сохранение документа в базе данных
     await order.save();
+    createPayment(product, id, total_sum)
+    .then((data) => console.log('Payment created:', res.json(data)))
+    .catch((error) => console.error('Error creating payment:', error));
     
-  
- 
 });
 app.post('/new-orderauth', async (req, res) => {
   
-  const {userId, fname, lname, lfname, number, chosenPost, addressPost, pricePost, product } = req.body;
- 
+  const {userId, fname, lname, lfname, number, chosenPost, addressPost, pricePost, total_sum, product } = req.body;
+  const id = uuid4()
    
   // Создание нового документа
 
   const order = new OrderModel({
+    _id: id,
     userId,
     fname,
     lname,
@@ -576,23 +590,55 @@ app.post('/new-orderauth', async (req, res) => {
     chosenPost,
     addressPost,
     pricePost,
+    totalSum: total_sum,
     product,
     status: 'В обработке',
     createdAt
   });
 
+  
   // Сохранение документа в базе данных
   await order.save();
   
-  res.json({ message: 'Ваш заказ создан' });
+
+  createPayment(product, id, total_sum)
+  .then((data) => console.log('Payment created:', res.json(data)))
+  .catch((error) => console.error('Error creating payment:', error));
  
 
 });
+
+// ЮКасса обработка платежей в заказе 
+app.post('/payment/notification', (req, res) => {
+  const notification = req.body;
+  const orderId = notification.object.id;
+
+  OrderModel.findOneAndUpdate(
+    { _id: orderId },
+    { status: notification.object.status },
+    { new: true },
+    (error, updatedOrder) => {
+      if (error) {
+        console.error('Ошибка при обновлении статуса заказа:', error);
+        res.sendStatus(500); // Отправляем код состояния 500 в случае ошибки обновления
+      } else {
+        if (updatedOrder) {
+          console.log('Состояние изменено')
+          res.sendStatus(200); // Отправляем код состояния 200 в качестве подтверждения получения уведомления
+        } else {
+          res.sendStatus(404); // Отправляем код состояния 404, если запись не найдена
+        }
+      }
+    }
+  );
+});
+ 
 
 
 // POST-маршрут для обновления пароля пользователя по номеру телефона
 app.post('/update-password', async (req, res) => {
   const { number } = req.body;
+   
 
   try {
     // Поиск пользователя по номеру телефона
@@ -609,8 +655,9 @@ app.post('/update-password', async (req, res) => {
     await user.save();
     // Отправка смс с новым паролем
    
-    const message = `Номер:${number} Новый пароль: ${generatePassword}`
-    await sendSMS(number, message)
+    const message = `Номер:${number} Новый пароль: ${generatedPassword}`   
+    const newNumber = number.slice(1,12) 
+    await sendSMS(newNumber, message)
     return res.status(200).json({ message: 'Новый пароль отправлен вам в SMS сообщении' });
   } catch (error) {
     console.error(error);
@@ -696,9 +743,9 @@ app.post('/reset-password', async (req, res) => {
     if (!user) {
       return res.status(404).json({ error: 'Пользователь не найден' });
     }
-
+    const hashedPassword = await bcrypt.hash(password, 10);
     // Обновление пароля пользователя
-    user.password = password;
+    user.password = hashedPassword;
 
     // Сохранение обновленного пользователя
     await user.save();
@@ -738,6 +785,67 @@ function generatePassword() {
 
   return password;
 }
+
+
+async function createPayment(product, id, totalSum) {
+  console.log( `totalSum в функции ${totalSum}`)
+  // Задаем данные для запроса
+  const shopId = process.env.SHOP_ID;
+  const secretKey = process.env.SHOP_KEY;
+  const idempotenceKey = id;
+  const url = 'https://api.yookassa.ru/v3/payments';
+  const authHeader = `Basic ${Buffer.from(`${shopId}:${secretKey}`).toString('base64')}`;
+
+  try {
+    const response = await axios.post(url, {
+      amount: {
+        value: `${totalSum}`,
+        currency: 'RUB',
+      },
+      confirmation: {
+        type: 'redirect',
+        return_url: 'http://localhost:3000/order-paid',
+      },
+      capture: true,
+      description: `Заказ №${id}`,
+      metadata: {
+        order_id: `${id}`,
+      },
+      receipt: {
+        customer: {
+          email: '6220095@mail.ru',
+        },
+        items: product.map(item => {
+          return(
+            {
+              description: item.name_of_product,
+              quantity: item.quantity,
+              amount: {
+                value: item.price_rubles,
+                currency: 'RUB',
+              },
+              vat_code: '1',
+              payment_mode: 'full_prepayment',
+              payment_subject: 'commodity',
+            }
+          )
+        }),
+      },
+    }, {
+      headers: {
+        'Idempotence-Key': idempotenceKey,
+        'Content-Type': 'application/json',
+        'Authorization': authHeader,
+      },
+    });
+
+    return response.data;
+  } catch (error) {
+    throw error.response.data;
+  }
+}
+
+
 
 
 module.exports = app;
